@@ -6,22 +6,38 @@
 ;; https://www.youtube.com/watch?v=-X49VQgi86E&feature=youtu.be
 
 (def window-size [620 620])
+
 (def circle-diameter {:x 580 :y 580})
-(def state (atom {:modulo 16
-                  :multiplicator 7}))
+
+(def initial-state {:modulo 16
+                    :multiplicator 7
+                    :next-modulo-fn inc})
+
+(defn change-in-state [key f state]
+  (assoc state key (f (key state))))
+
+(defn key-typed [state key]
+  (condp = (:key key)
+    :+ (change-in-state :multiplicator inc state)
+    :- (change-in-state :multiplicator dec state)
+    :h (assoc state :next-modulo-fn identity)
+    :a (assoc state :next-modulo-fn inc)
+    :n (change-in-state :modulo inc state)
+    :p (change-in-state :modulo dec state)
+    :r initial-state
+    state))
 
 (defn setup []
-  (q/frame-rate 1)
+  (q/frame-rate 30)
   (q/color-mode :hsb)
   ;; The initial state
-  state)
+  initial-state)
 
 (defn set-state! [multiplicator modulo]
   (reset! state {:modulo modulo :multiplicator multiplicator}))
 
 (defn update-state [state]
-  (swap! state assoc :modulo (inc (:modulo @state)))
-  state)
+  (assoc state :modulo ((:next-modulo-fn state) (:modulo state))))
 
 (defn calc-position [modulo value]
   (let [mod-value (mod value modulo)
@@ -47,7 +63,7 @@
   (q/with-translation [(/ (q/width) 2)
                        (/ (q/height) 2)]
     (q/ellipse 0 0 (:x circle-diameter) (:y circle-diameter))
-    (let [{:keys [:modulo :multiplicator]} @state]
+    (let [{:keys [:modulo :multiplicator]} state]
       (doseq [i (range modulo)]
         (draw-modulo-pos modulo i)
         (draw-line modulo i (* i multiplicator))))))
@@ -61,6 +77,7 @@
   :update update-state
   :draw draw-state
   :features [:keep-on-top]
+  :key-typed key-typed
   ;; This sketch uses functional-mode middleware.
   ;; Check quil wiki for more info about middlewares and particularly
   ;; fun-mode.
