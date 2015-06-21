@@ -7,26 +7,21 @@
 
 (def window-size [620 620])
 (def circle-diameter {:x 580 :y 580})
-(def reset-state (atom false))
+(def state (atom {:modulo 16
+                  :multiplicator 7}))
 
 (defn setup []
-  (q/frame-rate 30)
+  (q/frame-rate 1)
   (q/color-mode :hsb)
   ;; The initial state
-  {:modulo 10
-   :multiplicator 7})
+  state)
 
-(defn reset []
-  (swap! reset-state not))
+(defn set-state! [multiplicator modulo]
+  (reset! state {:modulo modulo :multiplicator multiplicator}))
 
 (defn update-state [state]
-  (if @reset-state
-    (do
-      (reset)
-      (setup))
-    (assoc state
-      :modulo
-      (inc (:modulo state)))))
+  (swap! state assoc :modulo (inc (:modulo @state)))
+  state)
 
 (defn calc-position [modulo value]
   (let [mod-value (mod value modulo)
@@ -45,16 +40,17 @@
 (defn draw-line [modulo v1 v2]
   (q/line (calc-position modulo v1) (calc-position modulo v2)))
 
-(defn draw-state [{:keys [:modulo :multiplicator]}]
+(defn draw-state [state]
   ;; Clear the sketch by filling it with light-grey color.
   (q/background 240)
   (q/fill 255)
   (q/with-translation [(/ (q/width) 2)
                        (/ (q/height) 2)]
     (q/ellipse 0 0 (:x circle-diameter) (:y circle-diameter))
-    (doseq [i (range modulo)]
-      (draw-modulo-pos modulo i)
-      (draw-line modulo i (* i multiplicator)))))
+    (let [{:keys [:modulo :multiplicator]} @state]
+      (doseq [i (range modulo)]
+        (draw-modulo-pos modulo i)
+        (draw-line modulo i (* i multiplicator))))))
 
 (q/defsketch mult-tables
   :title "Multiplication magic"
