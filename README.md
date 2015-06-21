@@ -1,6 +1,7 @@
 # mult-tables
 
-A Quil sketch designed to ... well, that part is up to you.
+A Quil sketch designed to draw the graphs as shown in this video:
+https://www.youtube.com/watch?v=-X49VQgi86E&feature=youtu.be
 
 ## Usage
 
@@ -12,7 +13,7 @@ REPL - run `(require 'mult-tables.core)`.
 
 ## License
 
-Copyright © 2014 FIXME
+Copyright © 2015 Andreas Werner
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
