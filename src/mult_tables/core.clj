@@ -2,59 +2,62 @@
   (:require [quil.core :as q]
             [quil.middleware :as m]))
 
+;; The idea for this visualization comes from this video
+;; https://www.youtube.com/watch?v=-X49VQgi86E&feature=youtu.be
+
 (def window-size [620 620])
 (def circle-diameter {:x 580 :y 580})
-(def multiplicator 3)
-
-(defn half [x] (/ x 2))
+(def reset-state (atom false))
 
 (defn setup []
-  ;; Set frame rate to 30 frames per second.
-  (q/frame-rate 10)
-  ;; Set color mode to HSB (HSV) instead of default RGB.
+  (q/frame-rate 30)
   (q/color-mode :hsb)
-  ;; setup function returns initial state. It contains
-  ;; circle color and position.
-  {:color 0
-   :angle 0
-   :modulo 10})
+  ;; The initial state
+  {:modulo 10
+   :multiplicator 7})
+
+(defn reset []
+  (swap! reset-state not))
 
 (defn update-state [state]
-  ;; Update sketch state by changing circle color and position.
-  state
-  {:color (mod (+ (:color state) 0.7) 255)
-   :angle (+ (:angle state) 0.1)
-   :modulo (inc (:modulo state))})
+  (if @reset-state
+    (do
+      (reset)
+      (setup))
+    (assoc state
+      :modulo
+      (inc (:modulo state)))))
 
 (defn calc-position [modulo value]
   (let [mod-value (mod value modulo)
-        segment (/ (* 2 3.141) modulo)
-        angle (+ (* mod-value segment) 3.141 (/ 3.141 2))
-        x (* (half (:x circle-diameter)) (q/cos angle))
-        y (* (half (:y circle-diameter)) (q/sin angle))]
+        segment (/ q/TWO-PI modulo)
+        circle-x-radius (/ (:x circle-diameter) 2)
+        circle-y-radius (/ (:y circle-diameter) 2)
+        angle (+ (* mod-value segment) q/PI q/HALF-PI)
+        x (* circle-x-radius (q/cos angle))
+        y (* circle-y-radius (q/sin angle))]
     [x y]))
 
-(defn draw-modulo-pos [calc-pos value]
-  (let [[x y] (calc-pos value)]
+(defn draw-modulo-pos [modulo value]
+  (let [[x y] (calc-position modulo value)]
     (q/ellipse x y 5 5)))
 
-(defn draw-state [state]
-  (let [r (:modulo state)
-        calc-pos (partial calc-position r)]
-    ;; Clear the sketch by filling it with light-grey color.
-    (q/background 240)
-    ;;
-    (q/fill 255)
-    (q/with-translation [(/ (q/width) 2)
-                         (/ (q/height) 2)]
-      (q/ellipse 0 0 (:x circle-diameter) (:y circle-diameter))
-      (doseq [i (range r)]
-        (draw-modulo-pos calc-pos i))
-      (doseq [i (range r)]
-        (q/line (calc-pos i) (calc-pos (* i multiplicator)))))))
+(defn draw-line [modulo v1 v2]
+  (q/line (calc-position modulo v1) (calc-position modulo v2)))
+
+(defn draw-state [{:keys [:modulo :multiplicator]}]
+  ;; Clear the sketch by filling it with light-grey color.
+  (q/background 240)
+  (q/fill 255)
+  (q/with-translation [(/ (q/width) 2)
+                       (/ (q/height) 2)]
+    (q/ellipse 0 0 (:x circle-diameter) (:y circle-diameter))
+    (doseq [i (range modulo)]
+      (draw-modulo-pos modulo i)
+      (draw-line modulo i (* i multiplicator)))))
 
 (q/defsketch mult-tables
-  :title "Multiplication table magic"
+  :title "Multiplication magic"
   :size window-size
   ;; setup function called only once, during sketch initialization.
   :setup setup
